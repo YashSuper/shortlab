@@ -1,0 +1,690 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>ImageForge Waitlist</title>
+<meta name="description" content="ImageForge resizes, crops, converts and compresses any image to your exact dimensions, aspect ratio and file size — privately in your browser. Includes marketplace-ready presets for Amazon sellers. Join the early-access waitlist.">
+<meta property="og:title" content="ImageForge — Any image. Any size. Any fit.">
+<meta property="og:description" content="Resize, crop, convert and compress any image to exactly what you need, privately in your browser. Plus marketplace-ready presets for Amazon sellers.">
+<meta property="og:type" content="website">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "WebSite",
+  "name": "ImageForge",
+  "description": "Universal image preparation tool that resizes, crops, converts and compresses any image to an exact dimension, aspect ratio and file size, privately in the browser, including marketplace-ready presets for Amazon sellers."
+}
+</script>
+<style>
+/* Forge theme: dark workshop + ember glow, committed single dark identity (no light-mode switch).
+   Layout: single-column scroll, ambient glow/grid behind everything, scroll-progress bar —
+   hero (signup card + molten compression gauge) -> features -> Amazon spec card -> steps -> closing CTA */
+:root{
+  --bg:#0a0b0d; --surface:#13151a; --surface-alt:#1a1d24; --surface-amz:#0d0e12;
+  --fg:#eef0f3; --muted:#8b92a3; --border:#262a33;
+  --accent:#ff7a30; --accent-2:#ffb347; --accent-fg:#0a0b0d; --accent-ink:#ff9a5c;
+  --glow:255,122,48; --container:900px;
+  --font-display:'Space Grotesk',ui-sans-serif,system-ui,sans-serif;
+  --font-body:'Inter',ui-sans-serif,system-ui,sans-serif;
+  --font-mono:'IBM Plex Mono',ui-monospace,'SF Mono',monospace;
+  color-scheme: dark;
+}
+@media (min-width:1024px){ :root{ --container:1440px; } }
+*{box-sizing:border-box}
+[hidden]{display:none !important}
+html{scroll-behavior:smooth}
+body{
+  margin:0; background:var(--bg); color:var(--fg); font-family:var(--font-body);
+  padding-left:max(16px, env(safe-area-inset-left, 0px));
+  padding-right:max(16px, env(safe-area-inset-right, 0px));
+  line-height:1.5; position:relative; overflow-x:hidden;
+}
+.wrap{max-width:var(--container); margin:0 auto; width:100%; position:relative; z-index:1}
+h1,h2,h3{font-family:var(--font-display); text-wrap:balance; margin:0; letter-spacing:-0.01em}
+.mono{font-family:var(--font-mono)}
+a{color:var(--accent-ink)}
+:focus-visible{outline:2px solid var(--accent); outline-offset:3px; border-radius:4px}
+.sr-only{position:absolute; width:1px; height:1px; padding:0; margin:-1px; overflow:hidden; clip:rect(0,0,0,0); white-space:nowrap; border:0}
+
+/* scroll progress */
+.scroll-progress{position:fixed; top:0; left:0; height:3px; width:0%; background:linear-gradient(90deg,var(--accent),var(--accent-2)); z-index:50; transition:width .1s linear}
+
+/* ambient background fx */
+.bg-fx{position:fixed; inset:0; z-index:0; pointer-events:none; overflow:hidden}
+.bg-fx .grid{
+  position:absolute; inset:-40px; opacity:.35;
+  background-image: radial-gradient(circle, rgba(255,255,255,.08) 1px, transparent 1px);
+  background-size: 26px 26px; animation: grid-drift 24s linear infinite;
+}
+.bg-fx .glow{
+  position:absolute; width:60vmax; height:60vmax; left:50%; top:-20vmax; transform:translateX(-50%);
+  background: radial-gradient(circle, rgba(var(--glow),.22), transparent 60%);
+  filter:blur(40px); animation: ember-drift 16s ease-in-out infinite;
+}
+.bg-fx .vignette{position:absolute; inset:0; background:radial-gradient(ellipse at center, transparent 40%, var(--bg) 92%)}
+
+@keyframes grid-drift{ from{background-position:0 0} to{background-position:26px 26px} }
+@keyframes ember-drift{ 0%,100%{transform:translate(-50%,0)} 50%{transform:translate(-46%,3vmax)} }
+@keyframes molten-shift{ 0%{background-position:0% 50%} 100%{background-position:200% 50%} }
+@keyframes pulse-dot{ 0%,100%{box-shadow:0 0 0 0 rgba(var(--glow),.55)} 50%{box-shadow:0 0 0 5px rgba(var(--glow),0)} }
+@keyframes blink{ 0%,49%{opacity:1} 50%,100%{opacity:0} }
+@keyframes bounce{ 0%,100%{transform:rotate(45deg) translate(0,0)} 50%{transform:rotate(45deg) translate(4px,4px)} }
+
+@media (prefers-reduced-motion: reduce){
+  .bg-fx .grid, .bg-fx .glow, .gauge-fill, .cursor, .scroll-cue .chevron, .embers span, .ratio-box__marquee rect, .ratio-box__label{animation:none !important}
+  .reveal{opacity:1 !important; transform:none !important; transition:none !important}
+  .ratio-box, .gauge-fill{transition:none !important}
+  .embers{display:none}
+}
+
+header.top{
+  position:sticky; top:0; z-index:40;
+  margin-left:calc(-1 * max(16px, env(safe-area-inset-left, 0px)));
+  margin-right:calc(-1 * max(16px, env(safe-area-inset-right, 0px)));
+  padding-left:max(16px, env(safe-area-inset-left, 0px));
+  padding-right:max(16px, env(safe-area-inset-right, 0px));
+  background:transparent; border-bottom:1px solid transparent;
+  transition:background-color .25s ease, border-color .25s ease;
+}
+header.top.is-stuck{
+  background:rgba(10,11,13,.86); -webkit-backdrop-filter:blur(10px); backdrop-filter:blur(10px);
+  border-bottom-color:var(--border);
+}
+.top-inner{max-width:var(--container); margin:0 auto; width:100%; display:flex; align-items:center; justify-content:space-between; padding-block:16px; gap:12px}
+.btn--sm{padding:8px 18px; font-size:13px}
+.wordmark{font-family:var(--font-display); font-weight:700; font-size:18px; letter-spacing:-0.02em; display:flex; align-items:center; gap:8px}
+.wordmark .dot{width:8px; height:8px; border-radius:50%; background:var(--accent); display:inline-block; animation:pulse-dot 2.4s ease-out infinite}
+.eyebrow{
+  font-family:var(--font-mono); font-size:11px; letter-spacing:0.08em; text-transform:uppercase;
+  color:var(--muted); border:1px solid var(--border); border-radius:100px; padding:4px 10px;
+  display:inline-flex; align-items:center; gap:2px;
+}
+.cursor{animation:blink 1s step-end infinite; color:var(--accent-ink)}
+
+.hero{padding-block:16px 8px}
+.hero-grid{display:grid; grid-template-columns:1.1fr 1fr; gap:32px; align-items:center}
+.hero h1{font-size:clamp(30px,5.8vw,46px); line-height:1.06; max-width:16ch}
+.hero h1 .accent-text{
+  background:linear-gradient(90deg,var(--accent),var(--accent-2),var(--accent));
+  background-size:200% 100%; -webkit-background-clip:text; background-clip:text; color:transparent;
+  animation:molten-shift 4s linear infinite;
+}
+.hero .tagline{font-family:var(--font-mono); color:var(--accent-ink); font-size:15px; letter-spacing:.02em; margin-top:10px}
+.hero p.sub{color:var(--muted); font-size:17px; max-width:46ch; margin-top:14px}
+.hero-links{margin-top:16px}
+.hero-links a{font-size:13.5px; color:var(--muted); text-decoration:underline}
+
+/* signup card */
+.signup-card{
+  position:relative; max-width:100%; background:var(--surface); border:1px solid var(--border);
+  border-radius:20px; padding:26px; box-shadow:0 24px 60px -28px rgba(0,0,0,.7);
+}
+.signup-card::before{
+  content:""; position:absolute; top:0; left:22px; right:22px; height:2px; border-radius:2px;
+  background:linear-gradient(90deg,var(--accent),var(--accent-2)); opacity:.9;
+}
+.signup-card__eyebrow{font-family:var(--font-mono); font-size:11px; text-transform:uppercase; letter-spacing:.08em; color:var(--muted); margin:0 0 14px}
+.wl-form{display:flex; flex-direction:column; gap:14px}
+.wl-row{display:flex; gap:10px; flex-wrap:wrap}
+.wl-row input[type="email"]{
+  flex:1 1 220px; min-width:0; font-family:var(--font-body); font-size:15px; padding:12px 16px;
+  border:1px solid var(--border); border-radius:100px; background:var(--surface-alt); color:var(--fg);
+  transition:border-color .15s ease, box-shadow .15s ease;
+}
+.wl-row input[type="email"]:focus{border-color:var(--accent); box-shadow:0 0 0 3px rgba(var(--glow),.18)}
+.wl-row input[type="email"]::placeholder{color:var(--muted)}
+.wl-row input:disabled{cursor:not-allowed; opacity:.6}
+.wl-fieldset{border:0; padding:0; margin:0}
+
+.btn{
+  position:relative; overflow:hidden; font-family:var(--font-body); font-weight:600; font-size:15px;
+  text-decoration:none; cursor:pointer; display:inline-flex; align-items:center; padding:12px 24px;
+  border-radius:100px; background:linear-gradient(135deg,var(--accent),var(--accent-2)); color:var(--accent-fg);
+  border:1px solid transparent; transition:transform .15s ease, box-shadow .15s ease; white-space:nowrap;
+}
+.btn:hover{transform:translateY(-1px); box-shadow:0 6px 24px -4px rgba(var(--glow),.55)}
+.btn:active{transform:translateY(0)}
+.btn:disabled{cursor:not-allowed; transform:none; box-shadow:none; opacity:.9}
+.btn-label{position:relative; z-index:1}
+.btn-fill{position:absolute; inset:0; width:0%; background:rgba(255,255,255,.28); z-index:0; transition:width 1.1s cubic-bezier(.22,.9,.3,1)}
+.btn.is-loading .btn-fill{width:88%}
+.btn.is-done .btn-fill{width:100%; transition:width .15s ease}
+
+.wl-choices{display:flex; flex-wrap:wrap; gap:8px}
+.wl-choice{position:relative}
+.wl-choice input{position:absolute; opacity:0; width:1px; height:1px}
+.wl-choice span{
+  display:inline-flex; font-family:var(--font-mono); font-size:12.5px; border:1px solid var(--border);
+  border-radius:100px; padding:6px 12px; color:var(--fg); background:var(--surface-alt); cursor:pointer;
+  transition:background .15s ease, color .15s ease, border-color .15s ease;
+}
+.wl-choice:has(input:checked) span{background:var(--accent); color:var(--accent-fg); border-color:transparent}
+.wl-choice:hover span{border-color:var(--accent-ink)}
+.wl-choice input:focus-visible + span{outline:2px solid var(--accent); outline-offset:2px}
+.wl-choice input:disabled + span{cursor:not-allowed; opacity:.6}
+.microcopy{font-size:12px; color:var(--muted); margin:0}
+.wl-success{
+  font-size:14px; padding:14px 16px; border-radius:12px; background:var(--surface-alt);
+  border:1px solid var(--border);
+}
+.wl-error{border-color:var(--accent-ink); color:var(--accent-ink)}
+
+.scroll-cue{display:flex; justify-content:center; margin-top:8px}
+.scroll-cue a{display:inline-flex; padding:14px; color:var(--muted)}
+.scroll-cue .chevron{width:9px; height:9px; border-right:2px solid currentColor; border-bottom:2px solid currentColor; transform:rotate(45deg); display:block; animation:bounce 2s ease-in-out infinite}
+
+.readout{
+  margin-top:28px; background:var(--surface); border:1px solid var(--border); border-radius:16px; padding:22px;
+  position:relative; overflow:hidden;
+}
+.embers{position:absolute; inset:0; pointer-events:none; z-index:0; overflow:hidden; border-radius:inherit}
+.embers span{
+  position:absolute; bottom:-10px; width:3px; height:3px; border-radius:50%; background:var(--accent-2);
+  box-shadow:0 0 6px 2px rgba(var(--glow),.6); opacity:0; animation:ember-rise 5.5s ease-in infinite;
+}
+.embers span:nth-child(1){left:10%; animation-delay:0s}
+.embers span:nth-child(2){left:28%; animation-delay:1.3s}
+.embers span:nth-child(3){left:50%; animation-delay:2.6s}
+.embers span:nth-child(4){left:71%; animation-delay:.7s}
+.embers span:nth-child(5){left:90%; animation-delay:3.4s}
+@keyframes ember-rise{
+  0%{transform:translateY(0) scale(.6); opacity:0}
+  12%{opacity:.9}
+  85%{opacity:.3}
+  100%{transform:translateY(-160px) scale(1); opacity:0}
+}
+.readout-content{position:relative; z-index:1; display:flex; flex-direction:column; gap:16px}
+.readout-row{display:flex; align-items:center; justify-content:space-between; gap:14px; flex-wrap:wrap}
+.file{display:flex; flex-direction:column; gap:4px; min-width:0}
+.file .name{font-family:var(--font-mono); font-size:13px; color:var(--muted); overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
+.file .size{font-family:var(--font-mono); font-size:22px; font-variant-numeric:tabular-nums; font-weight:500}
+.file.out .size{color:var(--accent-ink)}
+.arrow{font-family:var(--font-mono); color:var(--muted); font-size:20px; flex-shrink:0}
+.gauge{height:6px; border-radius:100px; background:var(--surface-alt); overflow:hidden; position:relative}
+.gauge-fill{
+  position:absolute; inset:0 auto 0 0; width:0%; border-radius:100px;
+  background:linear-gradient(90deg,var(--accent),var(--accent-2),var(--accent));
+  background-size:200% 100%; animation:molten-shift 3s linear infinite;
+  transition:width 1.1s cubic-bezier(.22,.9,.3,1);
+}
+.gauge-cap{font-family:var(--font-mono); font-size:11px; color:var(--muted); text-align:right}
+.chiprow{display:flex; flex-wrap:wrap; gap:8px}
+.chiplabel{font-size:11px; color:var(--muted); text-transform:uppercase; letter-spacing:.06em; width:100%; margin-bottom:-2px}
+.chip{
+  font-family:var(--font-mono); font-size:12px; border:1px solid var(--border); border-radius:8px;
+  padding:4px 9px; color:var(--fg); background:var(--surface-alt); transition:border-color .15s ease, background .15s ease, color .15s ease;
+}
+.chip:hover{border-color:var(--accent-ink)}
+button.chip{appearance:none; -webkit-appearance:none; cursor:pointer}
+.chip.active{background:var(--accent); color:var(--accent-fg); border-color:transparent}
+
+.ratio-preview{display:flex; justify-content:center; padding-block:6px}
+.ratio-box{
+  position:relative; height:150px; width:auto; aspect-ratio:1/1; border-radius:10px;
+  background:rgba(var(--glow),.08); display:flex; align-items:center; justify-content:center;
+  transition:aspect-ratio .6s cubic-bezier(.22,.9,.3,1);
+}
+.ratio-box__marquee{position:absolute; inset:0; width:100%; height:100%; color:var(--accent-ink)}
+.ratio-box__marquee rect{animation:marquee-crawl 1s linear infinite}
+@keyframes marquee-crawl{ to{ stroke-dashoffset:-22 } }
+.ratio-box__label{
+  position:relative; font-family:var(--font-mono); font-weight:700; font-size:clamp(22px,4vw,30px); text-align:center; padding:0 10px;
+  background:linear-gradient(90deg,var(--accent),var(--accent-2),var(--accent)); background-size:200% 100%;
+  -webkit-background-clip:text; background-clip:text; color:transparent; animation:molten-shift 4s linear infinite;
+}
+.ratio-note{font-size:12px; color:var(--muted); margin:0; text-align:center}
+
+section{padding-block:36px}
+.section-head{max-width:52ch; margin-bottom:26px}
+.section-head .eyebrow{margin-bottom:12px; display:inline-block}
+.section-head h2{font-size:clamp(22px,4vw,28px)}
+.section-head p{color:var(--muted); margin-top:10px; font-size:15px}
+
+.grid{display:grid; grid-template-columns:repeat(auto-fit,minmax(200px,1fr)); gap:14px}
+.card{
+  background:var(--surface); border:1px solid var(--border); border-radius:14px; padding:18px;
+  display:flex; flex-direction:column; gap:8px; min-width:0; transition:border-color .2s ease, transform .2s ease, opacity .5s ease;
+}
+.card:hover{border-color:var(--accent-ink); transform:translateY(-2px)}
+.card h3{font-size:15.5px; font-weight:600}
+.card p{color:var(--muted); font-size:13.5px; margin:0}
+.trust-note{border-left:2px solid var(--accent); padding-left:12px; font-size:13.5px; color:var(--muted); margin-top:18px}
+
+.amazon{
+  background:var(--surface-amz); color:#f2f0ec; border:1px solid var(--border); border-radius:18px; padding:30px;
+  display:flex; flex-direction:column; gap:20px;
+}
+.amazon .eyebrow{color:#aab0bd; border-color:#2e323d}
+.amazon h2{color:#fff; font-size:clamp(20px,4vw,26px)}
+.amazon p{color:#c7cbd3; font-size:14.5px; max-width:48ch}
+.spec-grid{display:grid; grid-template-columns:repeat(auto-fit,minmax(170px,1fr)); gap:10px}
+.spec{
+  background:#171920; border:1px solid #2a2d36; border-radius:10px; padding:12px 14px;
+  display:flex; flex-direction:column; gap:4px; min-width:0; transition:border-color .2s ease, opacity .5s ease;
+}
+.spec:hover{border-color:var(--accent-ink)}
+.spec .k{font-size:11px; color:#8a90a0; text-transform:uppercase; letter-spacing:.06em}
+.spec .v{font-family:var(--font-mono); font-size:14px; color:#fff; font-variant-numeric:tabular-nums}
+.source{font-size:11.5px; color:#787e8c}
+.amazon .wl-row input[type="email"]{background:#171920; border-color:#2a2d36; color:#fff}
+.amazon .wl-success{background:#171920; border-color:#2a2d36; color:#d7dae0}
+
+.steps{display:flex; flex-direction:column; gap:16px}
+.step{display:flex; gap:14px; align-items:flex-start; transition:opacity .5s ease, transform .5s ease}
+.step .n{
+  font-family:var(--font-mono); font-size:13px; color:var(--accent-ink); border:1px solid var(--border);
+  border-radius:100px; width:26px; height:26px; flex-shrink:0; display:flex; align-items:center; justify-content:center;
+}
+.step p{margin:0; padding-top:3px; font-size:14.5px}
+.step strong{font-weight:600}
+
+.closing{
+  text-align:left; border-top:1px solid var(--border); border-bottom:1px solid var(--border);
+  padding-block:36px; display:flex; flex-direction:column; gap:14px;
+}
+.closing h2{font-size:clamp(22px,4vw,28px); max-width:20ch}
+.closing p{color:var(--muted); max-width:46ch}
+
+footer{padding-block:28px; display:flex; flex-wrap:wrap; justify-content:space-between; gap:10px; font-size:12.5px; color:var(--muted)}
+
+/* scroll-reveal: class added by JS only, so content is always visible without JS/IntersectionObserver */
+.reveal{opacity:0; transform:translateY(14px); transition:opacity .5s ease, transform .5s ease}
+.reveal.revealed{opacity:1; transform:none}
+
+@media (max-width:700px){
+  .hero-grid{grid-template-columns:1fr}
+  .signup-card{margin-top:26px}
+}
+@media (max-width:480px){
+  .readout-row{flex-direction:column; align-items:flex-start; gap:10px}
+  .arrow{transform:rotate(90deg); align-self:flex-start}
+  .wl-row .btn{flex:1 1 100%; justify-content:center}
+  .ratio-box{height:110px}
+  .btn--sm{padding:7px 14px; font-size:12px}
+}
+</style>
+</head>
+<body>
+
+<div class="scroll-progress" id="scrollProgress" aria-hidden="true"></div>
+
+<div class="bg-fx" aria-hidden="true">
+  <div class="glow"></div>
+  <div class="grid"></div>
+  <div class="vignette"></div>
+</div>
+
+<header class="top" id="siteHeader">
+  <div class="top-inner">
+    <span class="wordmark"><span class="dot"></span>ImageForge</span>
+    <span class="eyebrow" id="headerEyebrow">Early access<span class="cursor">_</span></span>
+    <a class="btn btn--sm" id="headerCta" href="#waitlist-hero" hidden>Join the waitlist</a>
+  </div>
+</header>
+
+<div class="wrap">
+
+  <main>
+    <section class="hero" id="waitlist-hero">
+      <div class="hero-grid">
+        <div class="hero-copy">
+          <h1>Any image. Any size. <span class="accent-text">Any fit.</span></h1>
+          <p class="tagline">Forge it your way.</p>
+          <p class="sub">Resize, crop, convert and compress any image to exactly what you need. Set your dimensions, aspect ratio and file-size target, or process an entire batch in one workflow. All privately, right in your browser.</p>
+        </div>
+
+        <div class="signup-card">
+          <p class="signup-card__eyebrow">Get early access</p>
+          <form class="wl-form" data-wl-form>
+            <div class="wl-row">
+              <label class="sr-only" for="hero-email">Email address</label>
+              <input id="hero-email" type="email" name="email" placeholder="you@email.com" autocomplete="email" required>
+              <button class="btn" type="submit"><span class="btn-fill" aria-hidden="true"></span><span class="btn-label">Join the waitlist</span></button>
+            </div>
+            <fieldset class="wl-fieldset">
+              <legend class="sr-only">What brings you here?</legend>
+              <div class="wl-choices">
+                <label class="wl-choice"><input type="radio" name="segment" value="general" required><span>Websites and Socials</span></label>
+                <label class="wl-choice"><input type="radio" name="segment" value="amazon"><span>Amazon seller</span></label>
+                <label class="wl-choice"><input type="radio" name="segment" value="both"><span>Both</span></label>
+              </div>
+            </fieldset>
+            <p class="microcopy">Free early access. No spam. In development now.</p>
+          </form>
+          <p class="wl-success" data-wl-success hidden role="status" aria-live="polite">You're on the list. We'll email you when ImageForge is ready.</p>
+          <p class="wl-success wl-error" data-wl-error hidden role="status" aria-live="polite">Something went wrong. Try again in a moment.</p>
+        </div>
+      </div>
+
+      <p class="hero-links"><a href="#amazon">Preparing images for Amazon? Explore marketplace-ready tools →</a></p>
+
+      <div class="readout">
+        <div class="embers" aria-hidden="true"><span></span><span></span><span></span><span></span><span></span></div>
+        <div class="readout-content">
+          <div class="readout-row">
+            <div class="file">
+              <span class="name">IMG_4821.jpg</span>
+              <span class="size">2.4 MB</span>
+            </div>
+            <span class="arrow">→</span>
+            <div class="file out">
+              <span class="name">forged.webp · 1600 × 1600</span>
+              <span class="size">180 KB</span>
+            </div>
+          </div>
+          <div>
+            <div class="gauge"><div class="gauge-fill"></div></div>
+            <div class="gauge-cap">92% smaller</div>
+          </div>
+          <div class="chiprow">
+            <span class="chiplabel">Formats</span>
+            <span class="chip">JPEG</span><span class="chip">PNG</span><span class="chip">WebP</span>
+          </div>
+          <div class="ratio-preview">
+            <div class="ratio-box" id="ratioBox">
+              <svg class="ratio-box__marquee" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">
+                <rect x="1" y="1" width="98" height="98" rx="6" ry="6" fill="none" stroke="currentColor" stroke-width="1.5" stroke-dasharray="6 5" vector-effect="non-scaling-stroke"></rect>
+              </svg>
+              <span class="ratio-box__label">1:1</span>
+            </div>
+          </div>
+          <div class="chiprow" id="ratioChips">
+            <span class="chiplabel">Aspect presets</span>
+            <button type="button" class="chip active" data-ratio="1/1">1:1</button>
+            <button type="button" class="chip" data-ratio="4/3">4:3</button>
+            <button type="button" class="chip" data-ratio="3/2">3:2</button>
+            <button type="button" class="chip" data-ratio="16/9">16:9</button>
+            <button type="button" class="chip" data-ratio="9/16">9:16</button>
+            <button type="button" class="chip" data-ratio="4/5">4:5</button>
+            <button type="button" class="chip" data-ratio="5/4">5:4</button>
+            <button type="button" class="chip" data-ratio="free">Custom</button>
+          </div>
+          <p class="ratio-note">Need something specific? Set any custom ratio too.</p>
+        </div>
+      </div>
+
+      <div class="scroll-cue">
+        <a href="#features" aria-label="Scroll to learn more"><span class="chevron" aria-hidden="true"></span></a>
+      </div>
+    </section>
+
+    <section id="features">
+      <div class="section-head">
+        <span class="eyebrow">What's shipping</span>
+        <h2>One tool instead of four</h2>
+        <p>Everything you need to prepare an image for wherever it needs to go. No switching between converters, croppers, resizers and compressors.</p>
+      </div>
+      <div class="grid">
+        <div class="card">
+          <h3>Resize to exact dimensions</h3>
+          <p>Set precise width and height for websites, social media, product listings, documents or any other destination.</p>
+        </div>
+        <div class="card">
+          <h3>Crop or contain — your choice</h3>
+          <p>Fill any aspect ratio by cropping, or preserve the entire image with a background of your choice.</p>
+        </div>
+        <div class="card">
+          <h3>Hit your target file size</h3>
+          <p>Set a maximum size such as 100 KB, 200 KB or 1 MB. ImageForge works to find the best possible quality within your limit.</p>
+        </div>
+        <div class="card">
+          <h3>Convert any supported format</h3>
+          <p>Work with JPEG, PNG and WebP. Preserve transparency where the output format supports it.</p>
+        </div>
+        <div class="card">
+          <h3>Batch process everything</h3>
+          <p>Apply consistent settings to multiple images and download the results together as a ZIP.</p>
+        </div>
+      </div>
+      <p class="trust-note">Your images stay yours. Processing happens locally in your browser. Images are never uploaded to our servers.</p>
+    </section>
+
+    <section id="amazon">
+      <div class="amazon">
+        <span class="eyebrow">Marketplace-ready workflows</span>
+        <h2>One workflow. Amazon-ready images.</h2>
+        <p>Preparing product images for Amazon shouldn't mean juggling separate tools and manually checking specifications. Choose an Amazon image preset, prepare your images and validate the technical requirements before downloading.</p>
+
+        <div class="chiprow">
+          <span class="chiplabel">What's included</span>
+          <span class="chip">Amazon-specific presets</span>
+          <span class="chip">Main + additional images</span>
+          <span class="chip">Correct dimensions &amp; formats</span>
+          <span class="chip">White-background prep</span>
+          <span class="chip">Technical validation</span>
+          <span class="chip">Batch catalogue prep</span>
+        </div>
+
+        <div class="spec-grid">
+          <div class="spec"><span class="k">Longest side (required)</span><span class="v">500–10,000 px</span></div>
+          <div class="spec"><span class="k">Recommended</span><span class="v">1,000 px+ for zoom</span></div>
+          <div class="spec"><span class="k">Background (required)</span><span class="v">RGB 255, 255, 255</span></div>
+          <div class="spec"><span class="k">Formats (accepted)</span><span class="v">JPEG · PNG</span></div>
+        </div>
+        <p class="source">Sourced from Amazon Seller Central's product image guide, verified Nov 2026.</p>
+        <p class="source">Technical validation catches detectable issues — dimensions, format, background color — but can't guarantee full marketplace compliance or listing approval.</p>
+
+        <form class="wl-form" data-wl-form>
+          <input type="hidden" name="segment" value="amazon">
+          <div class="wl-row">
+            <label class="sr-only" for="amazon-email">Email address</label>
+            <input id="amazon-email" type="email" name="email" placeholder="you@email.com" autocomplete="email" required>
+            <button class="btn" type="submit"><span class="btn-fill" aria-hidden="true"></span><span class="btn-label">Get early access for Amazon sellers</span></button>
+          </div>
+        </form>
+        <p class="wl-success" data-wl-success hidden role="status" aria-live="polite">You're on the list. We'll email you when ImageForge is ready.</p>
+        <p class="wl-success wl-error" data-wl-error hidden role="status" aria-live="polite">Something went wrong. Try again in a moment.</p>
+      </div>
+    </section>
+
+    <section>
+      <div class="section-head">
+        <span class="eyebrow">How it'll work</span>
+        <h2>From any image to exactly what you need.</h2>
+        <p>No account needed. No image uploads. Just prepare and download.</p>
+      </div>
+      <div class="steps">
+        <div class="step"><span class="n">1</span><p><strong>Add your images.</strong> Upload one image or select an entire batch.</p></div>
+        <div class="step"><span class="n">2</span><p><strong>Forge your output.</strong> Choose dimensions, format, file-size target, aspect ratio or a marketplace preset.</p></div>
+        <div class="step"><span class="n">3</span><p><strong>Download and use.</strong> Get your optimized images individually or together as a ZIP.</p></div>
+      </div>
+    </section>
+
+    <section class="closing">
+      <h2>Your images. Your rules.</h2>
+      <p>Whether you're optimizing a website image, preparing a product catalogue, resizing social media assets or meeting marketplace specifications, ImageForge puts you in control. Join early access and help shape what we build next.</p>
+      <p><a class="btn" href="#waitlist-hero">Join the waitlist</a></p>
+    </section>
+  </main>
+
+  <footer>
+    <span>ImageForge — Your all-in-one image preparation workspace.</span>
+    <span>Any image. Any size. Any fit. Processed privately on your device.</span>
+  </footer>
+
+</div>
+
+<script>
+(function(){
+  var ENDPOINT = 'https://script.google.com/macros/s/AKfycbzuR8BXD0i6AHZ5G2G_RriTRninOxoLIJNPE1Y3Wd4rdd2F4wJHrvTXD-JOVk8mleZjkQ/exec';
+  var prefersReducedMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  document.querySelectorAll('[data-wl-form]').forEach(function(form){
+    var btn = form.querySelector('button[type="submit"]');
+    var btnLabel = btn.querySelector('.btn-label');
+    var originalLabel = btnLabel ? btnLabel.textContent : '';
+    var emailInput = form.querySelector('input[type="email"]');
+    var radios = form.querySelectorAll('input[name="segment"]');
+
+    form.addEventListener('submit', function(e){
+      e.preventDefault();
+      if (btn.disabled) return;
+
+      var segmentField = form.querySelector('input[name="segment"]:checked, input[name="segment"][type="hidden"]');
+      var payload = { email: emailInput.value, segment: segmentField ? segmentField.value : '' };
+      var success = form.parentElement.querySelector('[data-wl-success]');
+      var error = form.parentElement.querySelector('[data-wl-error]');
+
+      btn.disabled = true;
+      btn.setAttribute('aria-busy', 'true');
+      emailInput.disabled = true;
+      radios.forEach(function(r){ r.disabled = true; });
+      btn.classList.add('is-loading');
+      if (btnLabel) btnLabel.textContent = 'Joining…';
+      if (error) error.hidden = true;
+
+      fetch(ENDPOINT, {
+        method: 'POST',
+        mode: 'no-cors',
+        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+        body: JSON.stringify(payload)
+      }).then(function(){
+        btn.classList.add('is-done');
+        setTimeout(function(){
+          form.hidden = true;
+          if (success) success.hidden = false;
+        }, 180);
+      }).catch(function(){
+        btn.classList.remove('is-loading');
+        btn.disabled = false;
+        btn.removeAttribute('aria-busy');
+        emailInput.disabled = false;
+        radios.forEach(function(r){ r.disabled = false; });
+        if (btnLabel) btnLabel.textContent = originalLabel;
+        if (error) error.hidden = false;
+      });
+    });
+  });
+
+  // scroll progress bar
+  var bar = document.getElementById('scrollProgress');
+  function updateScrollProgress(){
+    if (!bar) return;
+    var doc = document.documentElement;
+    var scrollTop = doc.scrollTop || document.body.scrollTop;
+    var scrollHeight = (doc.scrollHeight || document.body.scrollHeight) - doc.clientHeight;
+    var pct = scrollHeight > 0 ? (scrollTop / scrollHeight) * 100 : 0;
+    bar.style.width = pct + '%';
+  }
+  window.addEventListener('scroll', updateScrollProgress, { passive: true });
+  updateScrollProgress();
+
+  // readout intro: fills the gauge and counts the output size down, once, on load
+  (function(){
+    var gaugeFill = document.querySelector('.gauge-fill');
+    var outSize = document.querySelector('.file.out .size');
+    if (prefersReducedMotion) {
+      if (gaugeFill) gaugeFill.style.width = '16%';
+      return;
+    }
+    requestAnimationFrame(function(){
+      requestAnimationFrame(function(){
+        if (gaugeFill) gaugeFill.style.width = '16%';
+      });
+    });
+    if (outSize) {
+      var fromKB = 2400, toKB = 180, duration = 1200, start = null;
+      function formatKB(kb){
+        return kb >= 1000 ? (Math.round(kb / 100) / 10) + ' MB' : Math.round(kb) + ' KB';
+      }
+      function step(ts){
+        if (!start) start = ts;
+        var p = Math.min((ts - start) / duration, 1);
+        var eased = 1 - Math.pow(1 - p, 3);
+        outSize.textContent = formatKB(fromKB + (toKB - fromKB) * eased);
+        if (p < 1) requestAnimationFrame(step); else outSize.textContent = '180 KB';
+      }
+      requestAnimationFrame(step);
+    }
+  })();
+
+  // sticky header: swap the "Early access" badge for a real CTA once scrolled
+  (function(){
+    var header = document.getElementById('siteHeader');
+    var eyebrow = document.getElementById('headerEyebrow');
+    var cta = document.getElementById('headerCta');
+    if (!header) return;
+    var THRESHOLD = 80;
+    function updateHeaderState(){
+      var scrolled = (window.scrollY || document.documentElement.scrollTop) > THRESHOLD;
+      header.classList.toggle('is-stuck', scrolled);
+      if (eyebrow) eyebrow.hidden = scrolled;
+      if (cta) cta.hidden = !scrolled;
+    }
+    window.addEventListener('scroll', updateHeaderState, { passive: true });
+    updateHeaderState();
+
+    if (cta) {
+      cta.addEventListener('click', function(e){
+        e.preventDefault();
+        var target = document.getElementById('waitlist-hero');
+        var emailInput = document.getElementById('hero-email');
+        if (target) target.scrollIntoView({ behavior: prefersReducedMotion ? 'auto' : 'smooth', block: 'start' });
+        if (emailInput) {
+          setTimeout(function(){ emailInput.focus({ preventScroll: true }); }, prefersReducedMotion ? 0 : 450);
+        }
+      });
+    }
+  })();
+
+  // aspect-ratio preview: cycles the ratio-box through presets; clicking a preset
+  // chip (acting as a slider nav) jumps straight there and restarts the cycle.
+  var ratioBox = document.getElementById('ratioBox');
+  var ratioChips = document.querySelectorAll('#ratioChips .chip');
+  if (ratioBox && ratioChips.length) {
+    var ratioLabel = ratioBox.querySelector('.ratio-box__label');
+    var ratioIndex = 0;
+    var ratioTimer = null;
+
+    function showRatio(i){
+      ratioIndex = i;
+      var chip = ratioChips[i];
+      var value = chip.getAttribute('data-ratio');
+      ratioBox.style.aspectRatio = (value === 'free') ? 'auto' : value;
+      if (ratioLabel) ratioLabel.textContent = chip.textContent;
+      ratioChips.forEach(function(c){ c.classList.remove('active'); });
+      chip.classList.add('active');
+    }
+
+    function startRatioCycle(){
+      clearInterval(ratioTimer);
+      ratioTimer = setInterval(function(){
+        showRatio((ratioIndex + 1) % ratioChips.length);
+      }, 2400);
+    }
+
+    ratioChips.forEach(function(chip, i){
+      chip.addEventListener('click', function(){
+        showRatio(i);
+        if (!prefersReducedMotion) startRatioCycle();
+      });
+    });
+
+    showRatio(0);
+    if (!prefersReducedMotion) startRatioCycle();
+  }
+
+  // scroll-reveal: progressive enhancement only. Without JS or IntersectionObserver
+  // support, the 'reveal' class is never added, so content stays fully visible —
+  // nothing in the page depends on this for being readable or crawlable.
+  if (!prefersReducedMotion && 'IntersectionObserver' in window) {
+    var revealEls = document.querySelectorAll('.card, .spec, .step');
+    revealEls.forEach(function(el){ el.classList.add('reveal'); });
+    var obs = new IntersectionObserver(function(entries){
+      entries.forEach(function(entry){
+        if (entry.isIntersecting) {
+          entry.target.classList.add('revealed');
+          obs.unobserve(entry.target);
+        }
+      });
+    }, { threshold: 0.15 });
+    revealEls.forEach(function(el){ obs.observe(el); });
+  }
+})();
+</script>
+
+</body>
+</html>
